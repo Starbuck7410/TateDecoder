@@ -7,25 +7,30 @@ function decodeChatMessage(message, users) {
 
 
         // Extracting fields
-        const author = message.author;
-        const content = message.content;
-        const timestamp = new Date(message.timestamp).toLocaleString(); // Format timestamp
+        let author = message.author;
+        let content = message.content;
+        let timestamp = new Date(message.timestamp).toLocaleString(); // Format timestamp
         let reactionCounts = '';
         if (message.reaction_counts) {
             reactionCounts = Object.entries(message.reaction_counts)
                 .map(([emoji, count]) => `${emoji}: ${count}`)
                 .join(", ");
         }
+        let k = 0;
 
-        while (content.search(/<@.*>/) != -1) {
-            let mention = message.content.match(/<@.*>/)[0];
-            let id = mention.match(/<@(.*)>/)[1];
-            let username = findUsername(id, users);
-            message.content = message.content.replace(mention, `@${username}`);
+        let mentions = content.match(/<@.*?>/g);
+        if (!mentions) {
+            mentions = [];
         }
+        for (let k = 0; k < mentions.length; k++) {
+            console.log(mentions[k]);
+            let username = findUsername(mentions[k].slice(2, -1), users);
+            content = content.replace(mentions[k], `@${username}`);
+        }
+
         // Formatting output
         return `
---- ${findUsername(author, users)}, @ ${timestamp} ---
+--- ${findUsername(author, users)}, $ ${timestamp} ---
 ${content}
 
 /${reactionCounts || ""}/
