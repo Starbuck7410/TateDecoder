@@ -2,7 +2,9 @@ module.exports = {
     decodeChatMessage: decodeChatMessage
 }
 
-function decodeChatMessage(message, users) {
+let cacheSize = 100;
+
+function decodeChatMessage(message, users, commonUsers) {
     try {
 
 
@@ -21,7 +23,6 @@ function decodeChatMessage(message, users) {
             }
             attachmentString += `::${attachments[i].filename} - ${formattedSize} (${metadata})\n`;
         }
-        console.log(attachmentString);
         let author = message.author;
         let content = message.content || "";
         let timestamp = new Date(message.timestamp).toLocaleString(); // Format timestamp
@@ -39,13 +40,13 @@ function decodeChatMessage(message, users) {
         }
         for (let k = 0; k < mentions.length; k++) {
             // console.log(mentions[k]);
-            let username = findUsername(mentions[k].slice(2, -1), users);
+            let username = findUsername(mentions[k].slice(2, -1), users, commonUsers);
             content = content.replace(mentions[k], `@${username}`);
         }
 
         // Formatting output
         return `
---- ${findUsername(author, users)}, $ ${timestamp} ---
+--- ${findUsername(author, users, commonUsers)}, $ ${timestamp} ---
 ${content}
 
 ${attachmentString}
@@ -58,12 +59,26 @@ ${attachmentString}
     }
 }
 
-function findUsername(id, users) {
+function findUsername(id, users, commonUsers) {
+    for (let i = 0; i < commonUsers.length; i++) {
+        if (commonUsers[i][0] == id) {
+            return commonUsers[i][1];
+        }
+    }
     for (let i = 0; i < users.length; i++) {
-        if (users[i].user._id == id || users[i].member._id.user == id) {
-            return users[i].user.username;
+        if (users[i][0] == id) {
+            commonUsers.unshift(users[i]);
+            if (commonUsers.length > cacheSize) {
+                commonUsers.pop();
+            }
+            return users[i][1];
+
         }
     }
     // console.log("Unknown user: " + id);
+    commonUsers.unshift([id, 'Unknown']);
+    if (commonUsers.length > cacheSize) {
+        commonUsers.pop();
+    }
     return 'Unknown'; // TODO handle unknown users better
 }

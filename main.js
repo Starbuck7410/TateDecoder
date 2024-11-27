@@ -1,6 +1,8 @@
+
 const decoder = require('./decode.js');
 const fs = require('fs');
 const path = require('path');
+
 
 // Read the file
 const dataPath = 'data';
@@ -19,13 +21,17 @@ for (let j = 0; j < folders.length; j++) {
 
 
 const users = fs.readFileSync('users.json', 'utf-8').split('\n');
-let parsedUsers = [];
+let userArray = [];
+let commonUsers = [];
+let JSONuser;
 for (let i = 0; i < users.length; i++) {
     if (users[i] == '') {
         continue;
     }
-    parsedUsers[i] = JSON.parse(users[i]);
+    JSONuser = JSON.parse(users[i]);
+    userArray[i] = [JSONuser.user._id, JSONuser.user.username];
 }
+console.log("Decoded user array with " + userArray.length + " users.");
 
 
 let file = "";
@@ -36,6 +42,7 @@ for (let i = 0; i < files.length; i++) { // for each file [i]
         fs.mkdirSync(targetDir + files[i].replace('.json', ''));
     }
     file = fs.readFileSync(files[i], 'utf-8').replace(/‎/, '').split('\n');
+    console.log("Decoding " + files[i] + " with " + file.length + " chunks.");
     for (let i = 0; i < file.length; i++) {
         if (!file[i]) {
             continue;
@@ -50,7 +57,7 @@ for (let i = 0; i < files.length; i++) { // for each file [i]
             fs.rmSync(targetDir + files[i].replace('.json', '') + '/' + k + '.txt', { force: true });
         }
         for (let j = 0; j < chunks[k].length; j++) { //for each message in chunk [j]
-            message = decoder.decodeChatMessage(chunks[k][j], parsedUsers);
+            message = decoder.decodeChatMessage(chunks[k][j], userArray, commonUsers);
             // console.log(message);
             fs.appendFileSync(targetDir + files[i].replace('.json', '') + '/' + k + '.txt', message, { flag: 'a' });
         }
@@ -76,3 +83,4 @@ function walkSync(dir, filelist, dirlist) {
     dirlist.unshift(dir);
     return [filelist, dirlist];
 };
+
